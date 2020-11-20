@@ -5,16 +5,16 @@ namespace rapid
 {
     public static class SeedExtensions
     {
-        public static int NextInt(this Seed seed, int min, int max, out Seed next)
+        public static int Next(this Seed seed, int min, int max, out Seed next)
         {
             var lng = seed.Next(out next);
             return ((int)(lng % ((ulong)(max - min)))) + min;
         }
 
-        public static int NextInt(this Seed seed, Range range, out Seed next)
+        public static long Next(this Seed seed, long min, long max, out Seed next)
         {
             var lng = seed.Next(out next);
-            return ((int)(lng % ((ulong)(range.Start.Value - range.End.Value)))) + range.End.Value;
+            return ((long)(lng % ((ulong)(max - min)))) + min;
         }
     }
 
