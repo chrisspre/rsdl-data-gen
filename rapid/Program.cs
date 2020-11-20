@@ -5,7 +5,7 @@ namespace rapid
     class Program
     {
         static void Main(string[] args)
-        {s
+        {
             // var gen = Generators.CharRange("abcdef");
             // var gen = Generators.String(6, Generators.HexDigit);
             // var gen = Generators.OneOf("Bob", "Sue", "Ted");

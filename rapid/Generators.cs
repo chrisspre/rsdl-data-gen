@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 
@@ -7,7 +8,7 @@ namespace rapid
 {
     public delegate bool Gen<T>(Parameters parameters, Seed seed, out (T Value, Seed Next) result);
 
-    public static class Generators
+    public static partial class Generators
     {
         /// <summary>
         /// Gen<T> extension to generate a sequence of values
@@ -100,64 +101,6 @@ namespace rapid
                result = (val, next);
                return true;
            };
-        }
-
-        public static Gen<T> Combine<T, A, B>(System.Func<A, B, T> constr,
-            Gen<A> gen1,
-            Gen<B> gen2)
-        {
-            return (Parameters @params, Seed seed, out (T, Seed) result) =>
-            {
-                // TODO: check for failure
-                var res0 = (default(T), Next: seed);
-                gen1(@params, res0.Next, out var res1);
-                gen2(@params, res1.Next, out var res2);
-                result = (constr(res1.Value, res2.Value), res2.Next);
-                return true;
-            };
-        }
-
-        public static Gen<T> Combine<T, A, B, C>(System.Func<A, B, C, T> constr,
-            Gen<A> gen1,
-            Gen<B> gen2,
-            Gen<C> gen3)
-        {
-            return (Parameters @params, Seed seed, out (T, Seed) result) =>
-            {
-                // TODO: check for failure
-                var res0 = (default(T), Next: seed);
-                gen1(@params, res0.Next, out var res1);
-                gen2(@params, res1.Next, out var res2);
-                gen3(@params, res2.Next, out var res3);
-                result = (constr(res1.Value, res2.Value, res3.Value), res3.Next);
-                return true;
-            };
-        }
-
-        public static Gen<T> Combine<T, A, B, C, D>(System.Func<A, B, C, D, T> constr,
-                   Gen<A> gen1,
-                   Gen<B> gen2,
-                   Gen<C> gen3,
-                   Gen<D> gen4)
-        {
-            return (Parameters @params, Seed seed, out (T, Seed) result) =>
-            {
-                var res0 = (default(T), Next: seed);
-                gen1(@params, res0.Next, out var res1);
-                gen2(@params, res1.Next, out var res2);
-                gen3(@params, res2.Next, out var res3);
-                gen4(@params, res3.Next, out var res4);
-                result = (constr(res1.Value, res2.Value, res3.Value, res4.Value), res4.Next);
-                return true;
-            };
-        }
-
-
-        internal static Gen<T> Create<T, T1, T2, T3, T4>(Gen<T1> gen1, Gen<T2> gen2, Gen<T3> gen3, Gen<T4> gen4)
-        {
-            var info = typeof(T).GetConstructor(new[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4) });
-            Func<T1, T2, T3, T4, T> fun = (a, b, c, d) => (T)info.Invoke(new object[] { a, b, c, d });
-            return Combine(fun, gen1, gen2, gen3, gen4);
         }
     }
 }
