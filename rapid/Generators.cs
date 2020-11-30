@@ -8,9 +8,18 @@ using System.Text;
 
 namespace rapid
 {
-    public delegate bool Gen<T>(Params parameters, Seed seed, out (T Value, Seed Next) result);
+    public delegate bool Gen<T>(Params @params, Seed seed, out (T Value, Seed Next) result);
 
-    public static partial class Generators
+
+    public record Params(int seed = 0)
+    {
+        public Seed InitialSeed()
+        {
+            return new Seed(seed);
+        }
+    }
+
+    public static partial class GeneratorExtensions
     {
         /// <summary>
         /// Gen<T> extension to generate a sequence of values
@@ -20,12 +29,12 @@ namespace rapid
         /// <param name="params"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static IEnumerable<T> Enumerate<T>(this Gen<T> gen, Params @params)
+        public static IEnumerable<T> Enumerate<T>(this Params generator, Gen<T> gen)
         {
-            var seed = @params.InitialSeed();
+            var seed = generator.InitialSeed();
             while (true)
             {
-                if (gen(@params, seed, out var result))
+                if (gen(generator, seed, out var result))
                 {
                     yield return result.Value;
                     seed = result.Next;
@@ -33,9 +42,9 @@ namespace rapid
             }
         }
 
-        public static Gen<T> Const<T>(T value)
+        public static Gen<T> Const<T>(this Params generator, T value)
         {
-            return (Params @params, Seed seed, out (T, Seed) result) =>
+            return (Params generator, Seed seed, out (T, Seed) result) =>
             {
                 result = (value, seed);
                 return true;
@@ -47,9 +56,9 @@ namespace rapid
         /// </summary>
         /// <param name="range"></param>
         /// <returns></returns>
-        public static Gen<char> CharRange(string range)
+        public static Gen<char> CharRange(this Params generator, string range)
         {
-            return (Params @params, Seed seed, out (char, Seed) result) =>
+            return (Params generator, Seed seed, out (char, Seed) result) =>
             {
                 var lng = seed.Next(out var next);
                 result = (range[(int)(lng % (ulong)range.Length)], next);
@@ -57,12 +66,12 @@ namespace rapid
             };
         }
 
-        internal static Gen<char> HexDigit =>
-            Generators.CharRange("0123456789ABCDEF");
+        internal static Gen<char> HexDigit(this Params generator) =>
+            generator.CharRange("0123456789ABCDEF");
 
-        public static Gen<int> Range(int min, int max)
+        public static Gen<int> Range(this Params generator, int min, int max)
         {
-            return (Params @params, Seed seed, out (int, Seed) result) =>
+            return (Params generator, Seed seed, out (int, Seed) result) =>
             {
                 var value = seed.Next(min, max, out var next);
                 result = (value, next);
@@ -70,9 +79,9 @@ namespace rapid
             };
         }
 
-        public static Gen<DateTime> Range(DateTime min, DateTime max)
+        public static Gen<DateTime> Range(this Params generator, DateTime min, DateTime max)
         {
-            return (Params @params, Seed seed, out (DateTime, Seed) result) =>
+            return (Params generator, Seed seed, out (DateTime, Seed) result) =>
             {
                 var value = seed.Next(min.Ticks, max.Ticks, out var next);
                 result = (new DateTime(value), next);
@@ -80,14 +89,14 @@ namespace rapid
             };
         }
 
-        public static Gen<string> String(int n, Gen<char> chars)
+        public static Gen<string> String(this Params generator, int n, Gen<char> chars)
         {
-            return (Params @params, Seed seed, out (string, Seed) result) =>
+            return (Params generator, Seed seed, out (string, Seed) result) =>
             {
                 var sb = new StringBuilder();
                 while (sb.Length < n)
                 {
-                    if (chars(@params, seed, out var temp))
+                    if (chars(generator, seed, out var temp))
                     {
                         sb.Append(temp.Value);
                         seed = temp.Next;
@@ -98,14 +107,14 @@ namespace rapid
             };
         }
 
-        public static Gen<T> OneOf<T>(params T[] items)
+        public static Gen<T> OneOf<T>(this Params generator, params T[] items)
         {
-            return Choose((IReadOnlyList<T>)items);
+            return generator.Choose((IReadOnlyList<T>)items);
         }
 
-        public static Gen<T> Choose<T>(IReadOnlyList<T> items)
+        public static Gen<T> Choose<T>(this Params generator, IReadOnlyList<T> items)
         {
-            return (Params @params, Seed seed, out (T, Seed) result) =>
+            return (Params generator, Seed seed, out (T, Seed) result) =>
            {
                var lng = seed.Next(out var next);
                var val = items[(int)(lng % (ulong)items.Count)];
@@ -114,12 +123,12 @@ namespace rapid
            };
         }
 
-        public static Gen<T> Choose<K, T>(IDictionary<K, T> items)
+        public static Gen<T> Choose<K, T>(this Params generator, IDictionary<K, T> items)
         {
-            return Choose(items.Values.ToList());
+            return generator.Choose(items.Values.ToList());
         }
 
-        internal static Gen<string> Word => Generators.Choose(File
+        internal static Gen<string> Word(this Params generator) => generator.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
             .SelectMany(line => line.Split(' '))
@@ -127,21 +136,21 @@ namespace rapid
             .ToList()
         );
 
-        internal static Gen<string> Sentence => Generators.Choose(File
+        internal static Gen<string> Sentence(this Params generator) => generator.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
             .ToList()
         );
 
-        public static Gen<IReadOnlyList<T>> List<T>(int min, int max, Gen<T> gen)
+        public static Gen<IReadOnlyList<T>> List<T>(this Params generator, int min, int max, Gen<T> gen)
         {
-            return (Params @params, Seed seed, out (IReadOnlyList<T>, Seed) result) =>
+            return (Params generator, Seed seed, out (IReadOnlyList<T>, Seed) result) =>
             {
                 var accu = new List<T>();
                 var len = seed.Next(min, max, out seed);
                 while (accu.Count < len)
                 {
-                    if (gen(@params, seed, out var temp))
+                    if (gen(generator, seed, out var temp))
                     {
                         accu.Add(temp.Value);
                         seed = temp.Next;

@@ -21,6 +21,7 @@ for (int n = 1; n <= 6; n++)
     }
 
     Console.WriteLine($"    public static Gen<T> Combine<T, {List(i => $"T{i}")}>(");
+    Console.WriteLine($"      this Generator generator,");
     Console.WriteLine($"      System.Func<{List(i => $"T{i}")}, T> constr, ");
     for (var i = 1; i <= n; i++)
     {
@@ -28,12 +29,12 @@ for (int n = 1; n <= 6; n++)
     }
     Console.WriteLine($"    )");
     Console.WriteLine($"    {{");
-    Console.WriteLine($"      return (Parameters @params, Seed seed, out (T, Seed) result) => ");
+    Console.WriteLine($"      return (Generator generator, Seed seed, out (T, Seed) result) => ");
     Console.WriteLine($"      {{ ");
     Console.WriteLine($"        var res0 = (default(T), Next: seed); ");
     for (var i = 1; i <= n; i++)
     {
-        Console.WriteLine($"        gen{i}(@params, res{i - 1}.Next, out var res{i}); ");
+        Console.WriteLine($"        gen{i}(generator, res{i - 1}.Next, out var res{i}); ");
     }
     Console.WriteLine($"        result = (constr({List(i => $"res{i}.Value")}), res{n}.Next); ");
     Console.WriteLine($"        return true; ");
@@ -47,9 +48,10 @@ for (int n = 1; n <= 6; n++)
         string.Join(", ", from i in Enumerable.Range(1, n) select fun(i));
 
     Console.WriteLine();
-    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>({List(i => $"Gen<T{i}> gen{i}")})");
+    // Console.WriteLine($"      this Generator generator,");
+    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>(this Generator generator, {List(i => $"Gen<T{i}> gen{i}")})");
     Console.WriteLine($"    {{");
-    Console.WriteLine($"        return Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
+    Console.WriteLine($"        return generator.Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
     Console.WriteLine($"    }}");
 }
 for (int n = 1; n <= 6; n++)
