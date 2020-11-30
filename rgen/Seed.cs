@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace rapid
+namespace generate
 {
     public static class SeedExtensions
     {

@@ -9,7 +9,7 @@ using System.Linq;
 Console.WriteLine($"using System;");
 Console.WriteLine($"using System.Linq.Expressions;");
 Console.WriteLine();
-Console.WriteLine($"namespace rapid");
+Console.WriteLine($"namespace generate");
 Console.WriteLine($"{{");
 Console.WriteLine($"  public static partial class Generators");
 Console.WriteLine($"  {{");
@@ -21,7 +21,7 @@ for (int n = 1; n <= 6; n++)
     }
 
     Console.WriteLine($"    public static Gen<T> Combine<T, {List(i => $"T{i}")}>(");
-    Console.WriteLine($"      this Generator generator,");
+    Console.WriteLine($"      this Environment env,");
     Console.WriteLine($"      System.Func<{List(i => $"T{i}")}, T> constr, ");
     for (var i = 1; i <= n; i++)
     {
@@ -29,12 +29,12 @@ for (int n = 1; n <= 6; n++)
     }
     Console.WriteLine($"    )");
     Console.WriteLine($"    {{");
-    Console.WriteLine($"      return (Generator generator, Seed seed, out (T, Seed) result) => ");
+    Console.WriteLine($"      return (Seed seed, out (T, Seed) result) => ");
     Console.WriteLine($"      {{ ");
     Console.WriteLine($"        var res0 = (default(T), Next: seed); ");
     for (var i = 1; i <= n; i++)
     {
-        Console.WriteLine($"        gen{i}(generator, res{i - 1}.Next, out var res{i}); ");
+        Console.WriteLine($"        gen{i}(res{i - 1}.Next, out var res{i}); ");
     }
     Console.WriteLine($"        result = (constr({List(i => $"res{i}.Value")}), res{n}.Next); ");
     Console.WriteLine($"        return true; ");
@@ -42,6 +42,7 @@ for (int n = 1; n <= 6; n++)
     Console.WriteLine($"    }}");
     Console.WriteLine($"");
 }
+
 for (int n = 1; n <= 6; n++)
 {
     string List(Func<int, string> fun) =>
@@ -49,9 +50,9 @@ for (int n = 1; n <= 6; n++)
 
     Console.WriteLine();
     // Console.WriteLine($"      this Generator generator,");
-    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>(this Generator generator, {List(i => $"Gen<T{i}> gen{i}")})");
+    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>(this Environment env, {List(i => $"Gen<T{i}> gen{i}")})");
     Console.WriteLine($"    {{");
-    Console.WriteLine($"        return generator.Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
+    Console.WriteLine($"        return env.Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
     Console.WriteLine($"    }}");
 }
 for (int n = 1; n <= 6; n++)

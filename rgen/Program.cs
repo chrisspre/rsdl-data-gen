@@ -1,33 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 
-namespace rapid
+namespace generate
 {
     class Program
     {
         static void Main(string[] args)
         {
-            Demo2();
+            Demo1();
         }
 
         static void Demo1()
         {
-            var generator = new Params();
-            // var gen = generator.CharRange("abcdef");
-            // var gen = generator.String(6, generator.HexDigit);
-            // var gen = generator.OneOf("Bob", "Sue", "Ted");
+            var env = new Environment();
 
-            var gen = generator.Create<Person, string, string, string, int>(
-                generator.String(4, generator.HexDigit()),
-                generator.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                generator.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher"),
-                generator.Range(1960, 2010)
+            var gen = env.Create<Person, string, string, string, int>(
+                env.String(4, env.HexDigit()),
+                env.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
+                env.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Carter", "Cooper", "Potter"),
+                env.Range(1960, 2010)
             );
 
-            foreach (var person in generator.Enumerate(gen).Take(10).OrderBy(p => p.lastName))
+            foreach (var person in env.Enumerate(gen).Take(10).OrderBy(p => p.lastName))
             {
                 Console.WriteLine("{0}", person);
             }
@@ -37,7 +33,7 @@ namespace rapid
 
         static void Demo2()
         {
-            var generator = new Params();
+            var generator = new Environment();
 
             var genP = generator.Combine((i, n, d) => new Product(i, n, d),
                 generator.String(4, generator.HexDigit()),
@@ -74,12 +70,9 @@ namespace rapid
 
 
 
-
-    public record Person(string id, string firstName, string lastName, int year)
+    public record Person(string id, string firstName, string lastName, int birthYear)
     {
     }
-
-
 
     public record Product(string Id, string Name, string Description)
     {
