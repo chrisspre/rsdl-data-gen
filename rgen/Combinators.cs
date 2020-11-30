@@ -9,7 +9,7 @@ namespace generate
 
     public static partial class GeneratorCombinators
     {
-        public static Gen<T> Const<T>(this Environment env, T value)
+        public static Gen<T> Const<T>(this GeneratorEnvironment env, T value)
         {
             return (Seed seed, out (T, Seed) result) =>
             {
@@ -23,7 +23,7 @@ namespace generate
         /// </summary>
         /// <param name="charset">characters to choose from</param>
         /// <returns></returns>
-        public static Gen<char> CharRange(this Environment env, string charset)
+        public static Gen<char> CharRange(this GeneratorEnvironment env, string charset)
         {
             return (Seed seed, out (char, Seed) result) =>
             {
@@ -33,7 +33,7 @@ namespace generate
             };
         }
 
-        internal static Gen<char> HexDigit(this Environment env) =>
+        internal static Gen<char> HexDigit(this GeneratorEnvironment env) =>
             env.CharRange("0123456789ABCDEF");
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace generate
         /// </summary>
         /// <param name="min">inclusive lower bound of range</param>
         /// <param name="max">exclusive upper bound of range</param>
-        public static Gen<int> Range(this Environment generator, int min, int max)
+        public static Gen<int> Range(this GeneratorEnvironment generator, int min, int max)
         {
             return (Seed seed, out (int, Seed) result) =>
             {
@@ -58,7 +58,7 @@ namespace generate
         /// </summary>
         /// <param name="min">inclusive lower bound of range</param>
         /// <param name="max">exclusive upper bound of range</param>
-        public static Gen<DateTime> Range(this Environment env, DateTime min, DateTime max)
+        public static Gen<DateTime> Range(this GeneratorEnvironment env, DateTime min, DateTime max)
         {
             return (Seed seed, out (DateTime, Seed) result) =>
             {
@@ -71,7 +71,7 @@ namespace generate
         /// <summary>
         /// Gen<string> combinator that produces strings of length n with characters from given character set        
         /// </summary>
-        public static Gen<string> String(this Environment env, int n, Gen<char> chars)
+        public static Gen<string> String(this GeneratorEnvironment env, int n, Gen<char> chars)
         {
             return (Seed seed, out (string, Seed) result) =>
             {
@@ -89,12 +89,12 @@ namespace generate
             };
         }
 
-        public static Gen<T> OneOf<T>(this Environment env, params T[] items)
+        public static Gen<T> OneOf<T>(this GeneratorEnvironment env, params T[] items)
         {
             return env.Choose((IReadOnlyList<T>)items);
         }
 
-        public static Gen<T> Choose<T>(this Environment env, IReadOnlyList<T> items)
+        public static Gen<T> Choose<T>(this GeneratorEnvironment env, IReadOnlyList<T> items)
         {
             return (Seed seed, out (T, Seed) result) =>
            {
@@ -105,12 +105,12 @@ namespace generate
            };
         }
 
-        public static Gen<T> Choose<K, T>(this Environment env, IDictionary<K, T> items)
+        public static Gen<T> Choose<K, T>(this GeneratorEnvironment env, IDictionary<K, T> items)
         {
             return env.Choose(items.Values.ToList());
         }
 
-        internal static Gen<string> Word(this Environment env) => env.Choose(File
+        internal static Gen<string> Word(this GeneratorEnvironment env) => env.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
             .SelectMany(line => line.Split(' '))
@@ -118,13 +118,13 @@ namespace generate
             .ToList()
         );
 
-        internal static Gen<string> Sentence(this Environment generator) => generator.Choose(File
+        internal static Gen<string> Sentence(this GeneratorEnvironment generator) => generator.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
             .ToList()
         );
 
-        public static Gen<IReadOnlyList<T>> List<T>(this Environment generator, int min, int max, Gen<T> gen)
+        public static Gen<IReadOnlyList<T>> List<T>(this GeneratorEnvironment generator, int min, int max, Gen<T> gen)
         {
             return (Seed seed, out (IReadOnlyList<T>, Seed) result) =>
             {

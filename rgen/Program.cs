@@ -2,71 +2,77 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using demo;
+using generate;
 
-namespace generate
+
+static class Program
 {
-    class Program
+    public static void Main()
     {
-        static void Main(string[] args)
+        Demo1();
+        // Demo2();
+    }
+
+    public static void Demo1()
+    {
+        var env = new GeneratorEnvironment();
+
+        var gen = env.Create<Person, string, string, string, int>(
+            env.String(4, env.HexDigit()),
+            env.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
+            env.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
+            env.Range(1960, 2010)
+        );
+
+        foreach (var person in env.Enumerate(gen).Take(12).OrderBy(p => p.lastName))
         {
-            Demo1();
-        }
-
-        static void Demo1()
-        {
-            var env = new Environment();
-
-            var gen = env.Create<Person, string, string, string, int>(
-                env.String(4, env.HexDigit()),
-                env.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                env.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Carter", "Cooper", "Potter"),
-                env.Range(1960, 2010)
-            );
-
-            foreach (var person in env.Enumerate(gen).Take(10).OrderBy(p => p.lastName))
-            {
-                Console.WriteLine("{0}", person);
-            }
-        }
-
-
-
-        static void Demo2()
-        {
-            var generator = new Environment();
-
-            var genP = generator.Combine((i, n, d) => new Product(i, n, d),
-                generator.String(4, generator.HexDigit()),
-                generator.Word(),
-                generator.Sentence()
-            );
-            var products = generator.Enumerate(genP).Take(10).ToDictionary(p => p.Id);
-            // foreach (var product in products.Values)
-            // {
-            //     Console.WriteLine("{0}", product);
-            // }
-
-            var genI = generator.Combine((i, n, d) => new LineItem(i, n, d),
-                generator.String(4, generator.HexDigit()),
-                generator.Choose(products),
-                generator.Range(1, 10)
-            );
-
-            var gen = generator.Combine((i, n, d) => new Order(i, n, d),
-                generator.String(4, generator.HexDigit()),
-                generator.Range(new DateTime(2015, 1, 1), DateTime.Today),
-                generator.List(3, 10, genI)
-            );
-
-            var orders = generator.Enumerate(gen).Take(10);
-
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            foreach (var order in orders)
-            {
-                Console.WriteLine("{0}", JsonSerializer.Serialize(order, options));
-            }
+            Console.WriteLine("{0}", person);
         }
     }
+
+
+
+    public static void Demo2()
+    {
+        var env = new GeneratorEnvironment();
+
+        var genP = env.Combine((i, n, d) => new Product(i, n, d),
+            env.String(4, env.HexDigit()),
+            env.Word(),
+            env.Sentence()
+        );
+        var products = env.Enumerate(genP).Take(10).ToDictionary(p => p.Id);
+        // foreach (var product in products.Values)
+        // {
+        //     Console.WriteLine("{0}", product);
+        // }
+
+        var genI = env.Combine((i, n, d) => new LineItem(i, n, d),
+            env.String(4, env.HexDigit()),
+            env.Choose(products),
+            env.Range(1, 10)
+        );
+
+        var gen = env.Combine((i, n, d) => new Order(i, n, d),
+            env.String(4, env.HexDigit()),
+            env.Range(new DateTime(2015, 1, 1), DateTime.Today),
+            env.List(3, 10, genI)
+        );
+
+        var orders = env.Enumerate(gen).Take(10);
+
+        var options = new JsonSerializerOptions { WriteIndented = true };
+        foreach (var order in orders)
+        {
+            Console.WriteLine("{0}", JsonSerializer.Serialize(order, options));
+        }
+    }
+}
+
+
+namespace demo
+{
 
 
 
