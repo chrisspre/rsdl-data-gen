@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.Caching;
 using System.Text;
 
 namespace generate
@@ -33,8 +34,35 @@ namespace generate
             };
         }
 
-        internal static Gen<char> HexDigit(this GeneratorEnvironment env) =>
-            env.CharRange("0123456789ABCDEF");
+        internal static Gen<char> HexDigit(this GeneratorEnvironment env, bool lower = true) =>
+            lower ? env.CharRange("0123456789abcdef") : env.CharRange("0123456789ABCDEF");
+
+
+        //public static Gen<TResult> SelectMany<TSource, TResult>(this Gen<TSource> source, Func<TSource, Gen<TResult>> selector)
+        public static Gen<TResult> SelectMany<TSource, TCollection, TResult>(this Gen<TSource> source, Func<TSource, Gen<TCollection>> collectionSelector, Func<TSource, TCollection, TResult> resultSelector)
+        {
+            return (Seed seed, out (TResult, Seed) result) =>
+            {
+                if (source(seed, out var r1))
+                {
+                    if (collectionSelector(r1.Value)(r1.Next, out var r2))
+                    {
+                        result = (resultSelector(r1.Value, r2.Value), r2.Next);
+                        return true;
+                    }
+                }
+                result = default;
+                return false;
+            };
+        }
+
+        public static Gen<string> Concat(this GeneratorEnvironment env, Gen<string> a, Gen<string> b)
+        {
+            return
+                from va in a
+                from vb in b
+                select va + vb;
+        }
 
         /// <summary>
         /// Foundational Gen<int> combinator that chooses a number from the given range of numbers 
@@ -110,21 +138,32 @@ namespace generate
             return env.Choose(items.Values.ToList());
         }
 
+        internal static T Cache<T>(this T items, string key, int seconds = 10)
+        {
+            var item = new CacheItem(key) { Value = new Lazy<T>(() => items) };
+            var policy = new CacheItemPolicy { SlidingExpiration = new TimeSpan(0, 0, seconds) };
+            var value = MemoryCache.Default.AddOrGetExisting(item, policy);
+            return ((Lazy<T>)item.Value).Value;
+        }
+
         internal static Gen<string> Word(this GeneratorEnvironment env) => env.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
             .SelectMany(line => line.Split(' '))
             .Select(word => word.Trim(',', '.', ' '))
+            .Cache("words")
             .ToList()
         );
+
 
         internal static Gen<string> Sentence(this GeneratorEnvironment generator) => generator.Choose(File
             .ReadLines("text.txt")
             .Where(line => !string.IsNullOrEmpty(line.Trim()))
+            .Cache("sentences")
             .ToList()
         );
 
-        public static Gen<IReadOnlyList<T>> List<T>(this GeneratorEnvironment generator, int min, int max, Gen<T> gen)
+        public static Gen<IReadOnlyList<T>> List<T>(this GeneratorEnvironment env, int min, int max, Gen<T> gen)
         {
             return (Seed seed, out (IReadOnlyList<T>, Seed) result) =>
             {
@@ -142,5 +181,20 @@ namespace generate
                 return true;
             };
         }
+
+
+
+        public static Func<IReadOnlyList<T1>, Gen<T>> Linked<T, T1>(this GeneratorEnvironment env, System.Func<IReadOnlyList<T1>, Gen<T>> fun)
+        {
+            return fun;
+        }
+
+
+        public static Func<IReadOnlyList<T1>, IReadOnlyList<T2>, Gen<T>> Linked<T, T1, T2>(this GeneratorEnvironment env, System.Func<IReadOnlyList<T1>, IReadOnlyList<T2>, Gen<T>> fun)
+        {
+            return fun;
+        }
+
+
     }
 }

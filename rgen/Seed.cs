@@ -49,5 +49,4 @@ namespace generate
             return (a, b);
         }
     }
-
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using demo;
 
 namespace generate
 {
@@ -6,6 +7,7 @@ namespace generate
     public record GeneratorEnvironment(int seed = 0, int MaxUpperBound = 100)
     {
         public Seed InitialSeed => new Seed(seed);
+
     }
 
     public static partial class GeneratorExtensions
@@ -19,6 +21,19 @@ namespace generate
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public static IEnumerable<T> Enumerate<T>(this GeneratorEnvironment env, Gen<T> gen)
+        {
+            var seed = env.InitialSeed;
+            while (true)
+            {
+                if (gen(seed, out var result))
+                {
+                    yield return result.Value;
+                    seed = result.Next;
+                }
+            }
+        }
+
+        public static IEnumerable<T> Enumerate<T>(this Gen<T> gen, GeneratorEnvironment env)
         {
             var seed = env.InitialSeed;
             while (true)
