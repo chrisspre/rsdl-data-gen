@@ -1,24 +1,24 @@
 using System.Collections.Generic;
+using demo;
 
 namespace generate
 {
 
-    public record GeneratorEnvironment(int seed = 0, int MaxUpperBound = 100)
+    public record GenerationParameters(int seed = 0, int MaxUpperBound = 100)
     {
         public Seed InitialSeed => new Seed(seed);
+
     }
 
-    public static partial class GeneratorExtensions
+    public static partial class GeneratorEnvironmentExtensions
     {
         /// <summary>
         /// Gen<T> extension to generate a sequence of values
         /// </summary>
         /// <param name="gen"></param>
-        /// <param name="size"></param>
-        /// <param name="params"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static IEnumerable<T> Enumerate<T>(this GeneratorEnvironment env, Gen<T> gen)
+        public static IEnumerable<T> Enumerate<T>(this Gen<T> gen, GenerationParameters env)
         {
             var seed = env.InitialSeed;
             while (true)
