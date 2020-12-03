@@ -37,10 +37,11 @@ namespace demo
 
         public static void Demo2()
         {
-            var env = new GenerationParameters();
-
             var options = new JsonSerializerOptions { WriteIndented = true };
-            var service = new Container(10, 10, 3);
+
+
+            var env = new GenerationParameters();
+            var service = new Container(env, 10, 10, 3);
 
             foreach (var order in service.Orders)
             {
@@ -55,9 +56,8 @@ namespace demo
             public IReadOnlyList<Order> Orders { get; }
 
 
-            public Container(int productCount, int userCount, int orderCount)
+            public Container(GenerationParameters env, int productCount, int userCount, int orderCount)
             {
-
                 var products = Create<Product, string, string, string>(
                     Concat(Const("P-"), String(4, HexDigit())), //  /P-[0-9a-f]{4}/
                     Word,
@@ -88,8 +88,6 @@ namespace demo
                     )
                 );
 
-
-                var env = new GenerationParameters();
                 Products = products.Enumerate(env).Take(productCount).ToList();
                 Users = users.Enumerate(env).Take(userCount).ToList();
                 Orders = orders(Users, Products).Enumerate(env).Take(orderCount).ToList();
