@@ -8,6 +8,8 @@ using generate;
 namespace demo
 {
 
+    using static Combinators;
+
     static class Program
     {
         public static void Main()
@@ -18,16 +20,15 @@ namespace demo
 
         public static void Demo1()
         {
-            var env = new GeneratorEnvironment();
-
-            var gen = env.Create<Person, string, string, string, int>(
-                env.String(6, env.HexDigit()),
-                env.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                env.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
-                env.Range(1960, 2010)
+            var gen = Create<Person, string, string, string, int>(
+                String(6, HexDigit()),
+                OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
+                OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
+                Range(1960, 2010)
             );
 
-            foreach (var person in env.Enumerate(gen).Take(12).OrderBy(p => p.lastName))
+            var env = new GenerationParameters();
+            foreach (var person in gen.Enumerate(env).Take(12).OrderBy(p => p.lastName))
             {
                 Console.WriteLine("{0}", person);
             }
@@ -36,7 +37,7 @@ namespace demo
 
         public static void Demo2()
         {
-            var env = new GeneratorEnvironment();
+            var env = new GenerationParameters();
 
             var options = new JsonSerializerOptions { WriteIndented = true };
             var service = new Container(10, 10, 3);
@@ -56,43 +57,45 @@ namespace demo
 
             public Container(int productCount, int userCount, int orderCount)
             {
-                var env = new GeneratorEnvironment();
 
-                var products = env.Combine((i, n, d) => new Product(i, n, d),
-                    env.Concat(env.Const("P-"), env.String(4, env.HexDigit())),
-                    env.Word(),
-                    env.Sentence()
+                var products = Create<Product, string, string, string>(
+                    Concat(Const("P-"), String(4, HexDigit())), //  /P-[0-9a-f]{4}/
+                    Word,
+                    Sentence
                 );
 
-                var users = env.Create<Person, string, string, string, int>(
-                    env.Concat(env.Const("U-"), env.String(4, env.HexDigit())),
-                    env.OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                    env.OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
-                    env.Range(1960, 2010)
+                var users = Create<Person, string, string, string, int>(
+                    Concat(Const("U-"), String(4, HexDigit())),
+                    OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
+                    OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
+                    Range(1960, 2010)
                 );
 
-                var items = env.Linked<LineItem, Product>((i) => env.Combine((k, a, p) => new LineItem(k, a, p),
-                    env.Concat(env.Const("I-"), env.String(4, env.HexDigit())),
-                    env.Range(1, 10),
-                    env.Choose(i)
-                ));
+                var items = Linked<LineItem, Product>((products) =>
+                    Combine((k, a, p) => new LineItem(k, a, p),
+                        Concat(Const("I-"), String(4, HexDigit())),
+                        Range(1, 10),
+                        Choose(products)
+                    )
+                );
 
-                var orders = env.Linked<Order, Person, Product>((u, p) => env.Combine((i, p, n, d) => new Order(i, p, n, d),
-                    env.Concat(env.Const("O-"), env.String(4, env.HexDigit())),
-                    env.Choose(u),
-                    env.Range(new DateTime(2015, 1, 1), DateTime.Today),
-                    env.List(3, 10, items(p))
-                ));
+                var orders = Linked<Order, Person, Product>((users, products) =>
+                    Combine((i, p, n, d) => new Order(i, p, n, d),
+                        Concat(Const("O-"), String(4, HexDigit())),
+                        Choose(users),
+                        Range(new DateTime(2015, 1, 1), DateTime.Today),
+                        List(3, 10, items(products))
+                    )
+                );
 
+
+                var env = new GenerationParameters();
                 Products = products.Enumerate(env).Take(productCount).ToList();
                 Users = users.Enumerate(env).Take(userCount).ToList();
                 Orders = orders(Users, Products).Enumerate(env).Take(orderCount).ToList();
             }
         }
     }
-
-
-
 
     public record Person(string id, string firstName, string lastName, int birthYear)
     {

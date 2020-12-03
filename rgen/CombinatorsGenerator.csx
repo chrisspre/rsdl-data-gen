@@ -8,7 +8,7 @@ Console.WriteLine($"using System.Linq.Expressions;");
 Console.WriteLine();
 Console.WriteLine($"namespace generate");
 Console.WriteLine($"{{");
-Console.WriteLine($"  public static partial class Generators");
+Console.WriteLine($"  public static partial class Combinators");
 Console.WriteLine($"  {{");
 // Combine
 for (int n = 1; n <= 6; n++)
@@ -19,7 +19,6 @@ for (int n = 1; n <= 6; n++)
     }
 
     Console.WriteLine($"    public static Gen<T> Combine<T, {List(i => $"T{i}")}>(");
-    Console.WriteLine($"      this GeneratorEnvironment env,");
     Console.WriteLine($"      System.Func<{List(i => $"T{i}")}, T> constr, ");
     for (var i = 1; i <= n; i++)
     {
@@ -49,9 +48,9 @@ for (int n = 1; n <= 6; n++)
 
     Console.WriteLine();
     // Console.WriteLine($"      this Generator generator,");
-    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>(this GeneratorEnvironment env, {List(i => $"Gen<T{i}> gen{i}")})");
+    Console.WriteLine($"    public static Gen<T> Create<T, {List(i => $"T{i}")}>({List(i => $"Gen<T{i}> gen{i}")})");
     Console.WriteLine($"    {{");
-    Console.WriteLine($"        return env.Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
+    Console.WriteLine($"        return Combine(GetConstructor<T, {List(i => $"T{i}")}>(), {List(i => $"gen{i}")});");
     Console.WriteLine($"    }}");
 }
 
