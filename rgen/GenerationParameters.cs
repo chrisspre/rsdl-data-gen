@@ -13,11 +13,11 @@ namespace generate
     public static partial class GeneratorEnvironmentExtensions
     {
         /// <summary>
-        /// Gen<T> extension to generate a sequence of values
+        /// generates an infinite sequence of generated values
         /// </summary>
-        /// <param name="gen"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
+        /// <param name="gen">generator</param>
+        /// <typeparam name="T">generator element type</typeparam>
+        /// <returns>an infinite sequence of generates values of type T</returns>
         public static IEnumerable<T> Enumerate<T>(this Gen<T> gen, GenerationParameters env)
         {
             var seed = env.InitialSeed;

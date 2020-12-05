@@ -14,18 +14,18 @@ namespace demo
     {
         public static void Main()
         {
-            // Demo1();
-            Demo2();
+            Demo1();
+            // Demo2();
         }
 
         public static void Demo1()
         {
-            var gen = Create<Person, string, string, string, int>(
-                String(6, HexDigit()),
-                OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
-                Range(1960, 2010)
-            );
+            var gen =
+                from i in String(6, HexDigit())
+                from f in Choose("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted")
+                from l in Choose("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper")
+                from y in Range(1960, 2010)
+                select new Person(i, f, l, y);
 
             var env = new GenerationParameters();
             foreach (var person in gen.Enumerate(env).Take(12).OrderBy(p => p.lastName))
@@ -38,7 +38,6 @@ namespace demo
         public static void Demo2()
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
-
 
             var env = new GenerationParameters();
             var service = new Container(env, 10, 10, 3);
@@ -58,34 +57,36 @@ namespace demo
 
             public Container(GenerationParameters env, int productCount, int userCount, int orderCount)
             {
-                var products = Create<Product, string, string, string>(
-                    Concat(Const("P-"), String(4, HexDigit())), //  /P-[0-9a-f]{4}/
-                    Word,
-                    Sentence
+                // generator for Product
+                var products =
+                    from key in String(6, HexDigit())
+                    from nam in Word
+                    from des in Sentence
+                    select new Product(key, nam, des);
+
+                // generator for Person
+                var users =
+                    from id in Concat(Const("U-"), String(4, HexDigit()))
+                    from fi in Choose("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted")
+                    from la in Choose("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper")
+                    from ye in Range(1960, 2010)
+                    select new Person(id, fi, la, ye);
+
+                // generator for LineItem dependent on a products generator
+                var items = Link(products, (products) =>
+                    from k in Concat(Const("I-"), String(4, HexDigit()))
+                    from a in Range(1, 10)
+                    from p in Choose(products)
+                    select new LineItem(k, a, p)
                 );
 
-                var users = Create<Person, string, string, string, int>(
-                    Concat(Const("U-"), String(4, HexDigit())),
-                    OneOf("Abe", "Joe", "Bea", "Ben", "Bob", "Sue", "Sky", "Roy", "Ted"),
-                    OneOf("Smith", "Miller", "Meyer", "Tailor", "Fisher", "Potter", "Carter", "Cooper"),
-                    Range(1960, 2010)
-                );
-
-                var items = Linked<LineItem, Product>((products) =>
-                    Combine((k, a, p) => new LineItem(k, a, p),
-                        Concat(Const("I-"), String(4, HexDigit())),
-                        Range(1, 10),
-                        Choose(products)
-                    )
-                );
-
-                var orders = Linked<Order, Person, Product>((users, products) =>
-                    Combine((i, p, n, d) => new Order(i, p, n, d),
-                        Concat(Const("O-"), String(4, HexDigit())),
-                        Choose(users),
-                        Range(new DateTime(2015, 1, 1), DateTime.Today),
-                        List(3, 10, items(products))
-                    )
+                // generator for Orders 
+                var orders = Link(users, products, (users, products) =>
+                    from k in Concat(Const("O-"), String(4, HexDigit()))
+                    from p in Choose(users)
+                    from n in Range(new DateTime(2015, 1, 1), DateTime.Today)
+                    from i in items(products).List(3, 7)
+                    select new Order(k, p, n, i)
                 );
 
                 Products = products.Enumerate(env).Take(productCount).ToList();

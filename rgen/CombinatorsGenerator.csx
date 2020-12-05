@@ -2,16 +2,48 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static System.Console;
 
-Console.WriteLine($"using System;");
-Console.WriteLine($"using System.Linq.Expressions;");
-Console.WriteLine();
-Console.WriteLine($"namespace generate");
-Console.WriteLine($"{{");
-Console.WriteLine($"  public static partial class Combinators");
-Console.WriteLine($"  {{");
-// Combine
+WriteLine($"using System;");
+WriteLine($"using System.Collections.Generic;");
+WriteLine();
+WriteLine($"namespace generate");
+WriteLine($"{{");
+WriteLine($"  public static partial class Combinators");
+WriteLine($"  {{");
 for (int n = 1; n <= 6; n++)
+{
+    GenerateLink(n);
+}
+// for (int n = 1; n <= 6; n++)
+// {
+//     GenerateCombine(n);
+// }
+// for (int n = 1; n <= 6; n++)
+// {
+//     GenerateCreate(n);
+// }
+// for (int n = 1; n <= 6; n++)
+// {
+//     GenerateGetConstructor(n);
+// }
+Console.WriteLine($"  }}");
+Console.WriteLine($"}}");
+
+void GenerateLink(int n)
+{
+    string List(Func<int, string> fun) =>
+        string.Join(", ", from i in Enumerable.Range(1, n) select fun(i));
+
+    Console.WriteLine();
+    var func = $"Func<{List(i => $"IReadOnlyList<T{i}>")}, Gen<T>>";
+    Console.WriteLine($"    public static {func} Link<T, {List(i => $"T{i}")}>({List(i => $"Gen<T{i}> gen{i}")}, {func} fun)");
+    Console.WriteLine($"    {{");
+    Console.WriteLine($"        return fun;");
+    Console.WriteLine($"    }}");
+}
+
+void GenerateCombine(int n)
 {
     string List(Func<int, string> fun)
     {
@@ -40,8 +72,7 @@ for (int n = 1; n <= 6; n++)
     Console.WriteLine($"");
 }
 
-// Create
-for (int n = 1; n <= 6; n++)
+void GenerateCreate(int n)
 {
     string List(Func<int, string> fun) =>
         string.Join(", ", from i in Enumerable.Range(1, n) select fun(i));
@@ -54,11 +85,10 @@ for (int n = 1; n <= 6; n++)
     Console.WriteLine($"    }}");
 }
 
-// private GetConstructor
-for (int n = 1; n <= 6; n++)
+void GenerateGetConstructor(int n)
 {
     string List(Func<int, string> fun) =>
-        string.Join(", ", from i in Enumerable.Range(1, n) select fun(i));
+            string.Join(", ", from i in Enumerable.Range(1, n) select fun(i));
 
     Console.WriteLine();
     Console.WriteLine($"    private static Func<{List(i => $"T{i}")}, T> GetConstructor<T, {List(i => $"T{i}")}>()");
@@ -70,5 +100,3 @@ for (int n = 1; n <= 6; n++)
     Console.WriteLine($"        return lambda.Compile();");
     Console.WriteLine($"    }}");
 }
-Console.WriteLine($"  }}");
-Console.WriteLine($"}}");
